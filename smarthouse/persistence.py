@@ -1,12 +1,17 @@
 import sqlite3
 from typing import Optional
-from smarthouse.domain import Measurement
+from smarthouse.domain import Measurement, SmartHouse,Room,Floor, Sensor, ActuatorWithSensor, Actuator
+from pathlib import Path
+
 
 class SmartHouseRepository:
     """
     Provides the functionality to persist and load a _SmartHouse_ object 
     in a SQLite database.
     """
+
+    file = Path(__file__).parent / "../data/db.sql"
+    #file = "C:\ING301\ing301local\ING301_Part_B\data\db.sql"
 
     def __init__(self, file: str) -> None:
         self.file = file 
@@ -16,12 +21,15 @@ class SmartHouseRepository:
         self.conn.close()
 
     def cursor(self) -> sqlite3.Cursor:
+
         """
         Provides a _raw_ SQLite cursor to interact with the database.
         When calling this method to obtain a cursors, you have to 
         rememeber calling `commit/rollback` and `close` yourself when
         you are done with issuing SQL commands.
         """
+        
+
         return self.conn.cursor()
 
     def reconnect(self):
@@ -36,9 +44,69 @@ class SmartHouseRepository:
         all referenced objects within the object structure (e.g. floors, rooms, devices) 
         are retrieved as well. 
         """
-        # TODO: START here! remove the following stub implementation and implement this function 
-        #       by retrieving the data from the database via SQL `SELECT` statements.
-        return NotImplemented
+
+        ## Kode for registering rooms and floors from database
+        DEMO_HOUSE2 = SmartHouse()
+        
+        # Spørring for å finne alle rom og lagre dette til ei liste
+        cursor = self.cursor()
+        query = "SELECT DISTINCT floor FROM rooms r;" # Spørring som tar vekk duplikerte etasjer, og returnerer berre dei unike etasjene
+        cursor.execute(query)
+        FLoorExtract = cursor.fetchall()
+        cursor.close()
+
+        # Går gjennom alle etasjer og registrerer dei
+        for floor in FLoorExtract:
+            DEMO_HOUSE2.register_floor(floor[0])
+
+        # Henter ei liste med alle etasjer
+        floorList = DEMO_HOUSE2.get_floors()
+
+        # Spørring for å finne alle rom og lagre dette til ei liste
+        cursor = self.cursor()
+        query = "SELECT * FROM rooms r"
+        cursor.execute(query)
+        RoomExtract = cursor.fetchall()
+        cursor.close()
+
+        # Kode for å registrere rom basert på antall etasjer
+        for rooms in RoomExtract: # går gjennom alle rom
+            for floor in floorList: # går gjennom alle etasjer
+                if rooms[1] == floor.level: # er room == etasje, så blir rommet registrert
+                    DEMO_HOUSE2.register_room(floor,rooms[2],rooms[3])
+
+        # Lager ei liste over alle registrerte romm.        
+        roomList = DEMO_HOUSE2.get_rooms()
+
+        # Spørring for å hente ut informasjon om device og rooms basert på id
+        cursor = self.cursor()
+        query2 = "select * FROM rooms r inner join devices d on r.id = d.room;"
+        cursor.execute(query2)
+        DeviceExtract2 = cursor.fetchall()
+        cursor.close()
+
+        # Kode for å registrere device i rett rom
+        for devices in DeviceExtract2:
+            if devices[7] == "sensor":
+                device = Sensor(devices[4],devices[9],devices[8],devices[6])
+                for room in roomList: # Går gjennom alle rom som er registrert
+                    if devices[1] == 1: # Sjekker etasje
+                        if str(devices[3]) == str(room.room_name): # Sjekker rom navn er like, gitt at dei er unike
+                            DEMO_HOUSE2.register_device(room,device) # Registrerer devicen i rette rommet
+                    if devices[1] == 2: # sjekker etasje
+                        if str(devices[3]) == str(room.room_name): # Sjekker rom navn er like, gitt at dei er unike
+                            DEMO_HOUSE2.register_device(room,device) # Registrerer devicen i rette rommet
+            if devices[7] == "actuator":
+                device = Actuator(devices[4],devices[9],devices[8],devices[6])
+                for room in roomList: # Går gjennom alle rom som er registrert
+                    if devices[1] == 1: # Sjekker etasje
+                        if str(devices[3]) == str(room.room_name): # Sjekker rom navn er like, gitt at dei er unike
+                            DEMO_HOUSE2.register_device(room,device) # Registrerer devicen i rette rommet
+                    if devices[1] == 2: # sjekker etasje
+                        if str(devices[3]) == str(room.room_name): # Sjekker rom navn er like, gitt at dei er unike
+                            DEMO_HOUSE2.register_device(room,device) # Registrerer devicen i rette rommet
+
+        return DEMO_HOUSE2
 
 
     def get_latest_reading(self, sensor) -> Optional[Measurement]:

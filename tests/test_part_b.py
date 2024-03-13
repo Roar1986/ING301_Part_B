@@ -23,7 +23,7 @@ class SmartHouseTest(unittest.TestCase):
         h = self.repo.load_smarthouse_deep()
         self.assertEqual(h.get_area(), 156.55)
 
-    def test_basic_get_no_of_devices(self):
+    def test_basic_get_no_of_devices(self): 
         h = self.repo.load_smarthouse_deep()
         self.assertEqual(len(h.get_devices()), 14)
 
