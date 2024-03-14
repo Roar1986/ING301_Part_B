@@ -1,4 +1,6 @@
 from smarthouse.domain import Actuator, Sensor, SmartHouse, ActuatorWithSensor
+from smarthouse.persistence import SmartHouseRepository
+from pathlib import Path
 
 DEMO_HOUSE = SmartHouse()
 
@@ -49,17 +51,5 @@ DEMO_HOUSE.register_device(office, plug)
 DEMO_HOUSE.register_device(bath2, dehumid)
 DEMO_HOUSE.register_device(gr2, bulp)
 
-"""import sqlite3
-con = sqlite3.connect("C:\ING301\ing301local\ING301_Part_B\data\db.sql")
-cursor = con.cursor()
-#query = """"""
-cursor.execute("SELECT * FROM rooms")
-all = cursor.fetchall()
-
-for row in all:
-    print(type(row))
-    print(row)
 
 
-cursor.close()
-con.close()"""

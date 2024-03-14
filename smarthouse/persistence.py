@@ -110,13 +110,39 @@ class SmartHouseRepository:
 
 
     def get_latest_reading(self, sensor) -> Optional[Measurement]:
-        """
-        Retrieves the most recent sensor reading for the given sensor if available.
-        Returns None if the given object has no sensor readings.
-        """
-        # TODO: After loading the smarthouse, continue here
-        return NotImplemented
 
+        """
+        Retrieves the most recent sensor reading for the given device if available.
+        Returns None if the given device has no sensor readings.
+        """
+        
+        # Lager spørring der eg velger value, ts og unit fra tabell measurments
+        # where device = ?, der ? er ein plass holder for sensor.id som kjem seinare i koden
+        # order by ts, desc, 
+        # Limitert til 1 verdi
+        cursor = self.cursor()
+        query = """
+            SELECT value, ts, unit
+            FROM measurements
+            WHERE device = ?
+            ORDER BY ts DESC
+            LIMIT 1;
+        """
+
+        # dette er ei try block, om det skulle vere ein feil i denne spørringa tl.d. 
+        # så vil koden hoppe videre til finnaly og lukke close cursor
+        try:
+            cursor.execute(query, (sensor.id,))
+            latest_reading_data = cursor.fetchone()
+        finally:
+            cursor.close()
+
+        # Sjekker om det er noko data, om det er data. returnerer vi objetet Measurment og setter rett data på rett plass
+        # Dersom ingen data, None vil bli returnert. 
+        if latest_reading_data:
+            return Measurement(value=latest_reading_data[0], timestamp=latest_reading_data[1], unit=latest_reading_data[2])
+        else:
+            return None
 
     def update_actuator_state(self, actuator):
         """
