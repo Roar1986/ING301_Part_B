@@ -51,5 +51,24 @@ DEMO_HOUSE.register_device(office, plug)
 DEMO_HOUSE.register_device(bath2, dehumid)
 DEMO_HOUSE.register_device(gr2, bulp)
 
+# Lager ein sti for den aktuelle database fila
+db_path = "./data/db.sql" 
 
+# Lager ein instans av SmartHouseRepository med db_path som parameter 
+repository = SmartHouseRepository(db_path)
 
+# Laster smarthus objectet ved hjelp av load_smarthouse_deep metoden fra databasen
+loaded_smarthouse = repository.load_smarthouse_deep()
+
+# bruker nå objectet til å laste ut litt informasjon frå smarthuset. 
+print("Printing device Information")
+for device in loaded_smarthouse.get_devices():
+    print(f"{device.id}, {device.model_name}, {device.supplier}")
+
+print("Printing floor information")
+for floor in loaded_smarthouse.get_floors():
+    print(floor.level)
+
+print("room informasjon")
+for room in loaded_smarthouse.get_rooms():
+    print(f"{room.room_name},{room.room_size}")
