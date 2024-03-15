@@ -108,16 +108,6 @@ class SmartHouseRepository:
 
         return DEMO_HOUSE2
 
-    def can_be_float(s):
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-
-
-
-
     def get_latest_reading(self, sensor) -> Optional[Measurement]:
 
         """
