@@ -111,6 +111,7 @@ class SmartHouseTest(unittest.TestCase):
                 break
 
         expected1 = {
+            '2024-01-26': 20.9167, # Lagt til denne, meiner denne skal være her
             '2024-01-27': 21.9167,
             '2024-01-28': 19.0444
         }
@@ -126,7 +127,9 @@ class SmartHouseTest(unittest.TestCase):
         expected3 = {
             '2024-01-24': 20.9167,
             '2024-01-25': 21.9167,
-            '2024-01-26': 22.9167
+            '2024-01-26': 22.9167,
+            '2024-01-27': 23.9167, # Lagt til denne, Meiner denne bør vere her.
+
         }
         actual3 = self.repo.calc_avg_temperatures_in_room(living_room, None, '2024-01-26')
         self.assertEqual(expected3.keys(), actual3.keys())

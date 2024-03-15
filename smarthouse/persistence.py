@@ -10,8 +10,8 @@ class SmartHouseRepository:
     in a SQLite database.
     """
 
+    # Filsti for databasefila
     file = Path(__file__).parent / "../data/db.sql"
-    #file = "C:\ING301\ing301local\ING301_Part_B\data\db.sql"
 
     def __init__(self, file: str) -> None:
         self.file = file 
@@ -108,6 +108,15 @@ class SmartHouseRepository:
 
         return DEMO_HOUSE2
 
+    def can_be_float(s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+
+
 
     def get_latest_reading(self, sensor) -> Optional[Measurement]:
 
@@ -148,11 +157,64 @@ class SmartHouseRepository:
         """
         Saves the state of the given actuator in the database. 
         """
+        
+
+
+        cursor = self.conn.cursor()
+        try:
+            # Check if an entry for this actuator already exists
+            cursor.execute("SELECT state FROM actuator_states WHERE device_id = ?", (actuator.id,))
+            result = cursor.fetchone()
+
+
+            # Check if an entry exists
+            if result is not None:
+                # Entry exists, update it
+                # Determine the state to update based on actuator's current state
+                new_state = str(actuator.state) 
+                if isinstance(actuator.state, bool): 
+                    cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
+                else:
+                    new_state = "True"
+                    cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
+            else:
+                # Ingen entry, ny rad blir lagt til
+                # The state should be stored as a string representation of the actual value
+                initial_state = str(actuator.state) if isinstance(actuator.state, bool) else str(float(actuator.state))
+                cursor.execute("INSERT INTO actuator_states (device_id, state) VALUES (?, ?)", (actuator.id, initial_state))
+
+            # Make sure to commit your changes
+            self.conn.commit()
+
+            #if result:
+            #    # Entry exists, update it
+            #    if result == True or result == False:
+            #        cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (str(actuator.state), actuator.id))
+            #    if result == float:
+            #        cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (str(True), actuator.id))
+            #else:
+            #    # No entry exists, insert a new one
+            #    cursor.execute("INSERT INTO actuator_states (device_id, state) VALUES (?, ?)", (actuator.id, str(actuator.state)))
+
+            # Commit changes
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")
+            self.conn.rollback()
+        finally:
+            cursor.close()
+
+
         # TODO: Implement this method. You will probably need to extend the existing database structure: e.g.
         #       by creating a new table (`CREATE`), adding some data to it (`INSERT`) first, and then issue
         #       and SQL `UPDATE` statement. Remember also that you will have to call `commit()` on the `Connection`
         #       stored in the `self.conn` instance variable.
-        pass
+
+        # Lage ny tabell
+    
+        # Legge til data
+    
+        # Sql Update, call commit ?
 
 
     # statistics
@@ -168,9 +230,38 @@ class SmartHouseRepository:
         The result should be a dictionary where the keys are strings representing dates (iso format) and 
         the values are floating point numbers containing the average temperature that day.
         """
-        # TODO: This and the following statistic method are a bit more challenging. Try to design the respective 
-        #       SQL statements first in a SQL editor like Dbeaver and then copy it over here.  
-        return NotImplemented
+        cursor = self.conn.cursor()
+
+        # Spørring
+        # ved å bruke measurments.unit = '°C', så tar spørringa med seg alle plasser der det er ein temperatur.
+        query = """
+        SELECT DATE(measurements.ts) as date, AVG(measurements.value) as avg_temp
+        FROM measurements
+        JOIN devices ON measurements.device = devices.id
+        JOIN rooms ON devices.room = rooms.id
+        WHERE rooms.name = ? AND measurements.unit = '°C'
+        AND (DATE(measurements.ts) BETWEEN ? AND ? OR ? IS NULL OR ? IS NULL)
+        GROUP BY DATE(measurements.ts);
+        """
+
+        # Spørring som kan brukest i dbeaver.
+        """SELECT DATE(measurements.ts) as date, AVG(measurements.value) as avg_temp
+        FROM measurements
+        JOIN devices ON measurements.device = devices.id
+        JOIN rooms ON devices.room = rooms.id
+        WHERE (rooms.name = 'Living Room / Kitchen'  AND measurements.unit = '°C' AND devices.kind IN ('Temperature Sensor', 'Heat Pump','Smart Oven'))
+        GROUP BY DATE(measurements.ts);"""
+
+
+        # Eksekuterer spørringa, ? fra spørringa er referert til i cursor under
+        cursor.execute(query, (room.room_name, from_date, until_date, from_date, until_date))
+        rows = cursor.fetchall()
+
+        # Konverterer rows in til ein dictionary
+        avg_temps = {date: avg_temp for date, avg_temp in rows}
+
+        cursor.close()
+        return avg_temps
 
     
     def calc_hours_with_humidity_above(self, room, date: str) -> list:
@@ -180,6 +271,54 @@ class SmartHouseRepository:
         the average recorded humidity in that room at that particular time.
         The result is a (possibly empty) list of number representing hours [0-23].
         """
-        # TODO: implement
-        return NotImplemented
+        
+        # Spørring for å rom id
+        cursor = self.conn.cursor()
+        room_id_query = "SELECT id FROM rooms WHERE name = ?"
+        cursor.execute(room_id_query, (room.room_name,))
+        room_id_result = cursor.fetchone()
+        
+        # Om ikkje id er funnet, returnerer tom liste
+        if not room_id_result:
+            return []  # Room not found
+
+        # rom ID = første indeks i resultatet
+        room_id = room_id_result[0]
+
+        # Spørring
+        query = """
+        WITH AverageHumidity AS (
+            SELECT AVG(measurements.value) as avg_humidity
+            FROM measurements
+            JOIN devices ON measurements.device = devices.id
+            WHERE devices.room = ?
+            AND DATE(measurements.ts) = ?
+            AND devices.kind = 'Humidity Sensor'
+        ),
+        HourlyMeasurements AS (
+            SELECT 
+                strftime('%H', measurements.ts) as hour,
+                measurements.value as humidity
+            FROM measurements
+            JOIN devices ON measurements.device = devices.id
+            WHERE devices.room = ?
+            AND DATE(measurements.ts) = ?
+            AND devices.kind = 'Humidity Sensor'
+        )
+        SELECT hour
+        FROM HourlyMeasurements, AverageHumidity
+        WHERE humidity > avg_humidity
+        GROUP BY hour
+        HAVING COUNT(humidity) > 3;
+        """
+
+        # Setter inn rom id og dato inn i spørringa der det står ?
+        cursor.execute(query, (room_id, date,room_id,date))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        # Converterer rekke in til ei liste av timer
+        hours_with_high_humidity = [int(row[0]) for row in rows]
+        return hours_with_high_humidity
+
 

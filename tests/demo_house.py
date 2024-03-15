@@ -72,3 +72,27 @@ for floor in loaded_smarthouse.get_floors():
 print("room informasjon")
 for room in loaded_smarthouse.get_rooms():
     print(f"{room.room_name},{room.room_size}")
+
+# sjekker siste measurment ved å bruke get_latest_reading metoden.
+AllDevices = loaded_smarthouse.get_devices()
+for sensors in AllDevices:
+    latest_reading = repository.get_latest_reading(sensors)
+    if latest_reading:
+        print(f"Latest reading for sensor {sensors}: {latest_reading.value} {latest_reading.unit} at {latest_reading.timestamp}")
+    else:
+        print(f"No readings found on sensor {sensors}.")
+else:
+    print(f"Sensors {sensors} not found or is not a sensor.")
+
+
+AllRooms = loaded_smarthouse.get_rooms()
+print("Tester humidity above calculasjon")
+for rooms in AllRooms:
+    avrage_calc = repository.calc_hours_with_humidity_above(rooms,'2024-01-27')
+    print(f"{avrage_calc} : {rooms.room_name}")
+
+print("Tester Avrage calc")
+
+for rooms in AllRooms:
+    avrage_calc = repository.calc_avg_temperatures_in_room(rooms,'2024-01-27')
+    print(f"{avrage_calc} : {rooms.room_name}")
