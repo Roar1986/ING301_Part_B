@@ -147,20 +147,18 @@ class SmartHouseRepository:
         """
         Saves the state of the given actuator in the database. 
         """
-        
-
-
         cursor = self.conn.cursor()
+        
         try:
-            # Check if an entry for this actuator already exists
+            # Sjekker om det er ein 
             cursor.execute("SELECT state FROM actuator_states WHERE device_id = ?", (actuator.id,))
             result = cursor.fetchone()
 
 
-            # Check if an entry exists
+            # Sjekker result, om det ikkje er None
             if result is not None:
-                # Entry exists, update it
-                # Determine the state to update based on actuator's current state
+                # Det finnes ein entry
+                # Definerer staten basert på actuatorens aktuelle state
                 new_state = str(actuator.state) 
                 if isinstance(actuator.state, bool): 
                     cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
@@ -169,45 +167,26 @@ class SmartHouseRepository:
                     cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
             else:
                 # Ingen entry, ny rad blir lagt til
-                # The state should be stored as a string representation of the actual value
+                # Staten skal lagres i ein string som representerer den aktuelle verdien
                 initial_state = str(actuator.state) if isinstance(actuator.state, bool) else str(float(actuator.state))
                 cursor.execute("INSERT INTO actuator_states (device_id, state) VALUES (?, ?)", (actuator.id, initial_state))
 
-            # Make sure to commit your changes
+            # Commintter endringane
             self.conn.commit()
 
-            #if result:
-            #    # Entry exists, update it
-            #    if result == True or result == False:
-            #        cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (str(actuator.state), actuator.id))
-            #    if result == float:
-            #        cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (str(True), actuator.id))
-            #else:
-            #    # No entry exists, insert a new one
-            #    cursor.execute("INSERT INTO actuator_states (device_id, state) VALUES (?, ?)", (actuator.id, str(actuator.state)))
-
-            # Commit changes
-            self.conn.commit()
         except sqlite3.Error as e:
             print(f"An error occurred: {e}")
             self.conn.rollback()
         finally:
             cursor.close()
 
+            # Kan sjå at statane ikkje lagres skikkelig, ser ut som dei er rett i databasen. Men ikkje i objektet.
+
 
         # TODO: Implement this method. You will probably need to extend the existing database structure: e.g.
         #       by creating a new table (`CREATE`), adding some data to it (`INSERT`) first, and then issue
         #       and SQL `UPDATE` statement. Remember also that you will have to call `commit()` on the `Connection`
         #       stored in the `self.conn` instance variable.
-
-        # Lage ny tabell
-    
-        # Legge til data
-    
-        # Sql Update, call commit ?
-
-
-    # statistics
 
     
     def calc_avg_temperatures_in_room(self, room, from_date: Optional[str] = None, until_date: Optional[str] = None) -> dict:
