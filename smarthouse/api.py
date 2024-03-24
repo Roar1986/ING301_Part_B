@@ -36,7 +36,7 @@ def hello(name: str = "world"):
 
 
 # Starting point ...
-
+# Får all informasjon frå smarthuset
 @app.get("/smarthouse")
 def get_smarthouse_info() -> dict[str, int | float]:
     """
@@ -49,6 +49,81 @@ def get_smarthouse_info() -> dict[str, int | float]:
         "registered_devices": len(smarthouse.get_devices()),
         "area": smarthouse.get_area()
     }
+
+
+# --------------- Det skal finnes endepunkter for å inspisere strukturen til huset ---------------
+
+# Få informasjon frå alle etasjar
+@app.get("/smarthouse/floor")
+def get_smarthouse_floor() -> dict[str,int | float]:
+    return{
+       "no_floors": len(smarthouse.get_floors()),
+        
+    }
+
+# Få informasjon om ein gitt etasje gitt av "fid"
+@app.get("/smarthouse/floor/{fid}")
+def get_smarthouse_floor_specific() -> dict[str,int | float]:
+    pass
+
+# Få informasjon om alle room på ein gitt etasje
+@app.get("/smarthouse/floor/{fid}/room")
+def get_smarthouse_AllroomsAtSpecificFloor() -> dict[str,int | float]:
+    pass
+
+# Informasjon om ein spesific rom {rid} på ein gitt etasje {fid}
+@app.get("/smarthouse/floor/{fid}/room/{rid}")
+def get_smarthouse_roomAtSpecificFloor()-> dict[str,int | float]:
+    pass
+
+# --------- Det skal finnes endepunkter for tilgang til enheter -------------------------------------
+
+# Informasjon om alle devicer
+@app.get("/smarthouse/device")
+def get_smarthouse_device()-> dict[str,int | float]:
+    pass
+
+# Informasjon om ein gitt device identifisert av uuid
+@app.get("/smarthouse/device/{uiid}")
+def get_smarthouse_device()-> dict[str,int | float]:
+    pass
+
+# --------- Det skal finnes spesielle endepunkter for tilgang til sensor funksjoner -----------------
+
+# Get current sensor måling for sensor uuid
+@app.get("smarthouse/sensor/{uuid}/current")
+def get_smarthouse_sensor_currentMeasurment()-> dict[str,int | float]:
+    pass
+
+# Legg til måling for sensor uuid
+@app.post("smarthouse/sensor/{uuid}/current")
+def post_smarthouse_sensor_Measurment()-> dict[str,int | float]:
+    pass
+
+#  get n siste målinger for sensor uuid. om query parameter ikkje er tilgjengelig, den alle tilgjengelege målinger.
+@app.get("GET smarthouse/sensor/{uuid}/values?limit=n")
+def get_smarthouse_sensor_MeasurmentLatestAvailable()-> dict[str,int | float]:
+    pass
+
+# Slett gamleste måling for sensor uuid
+@app.delete("smarthouse/sensor/{uuid}/oldest")
+def delete_smarthouse_sensor_MeasurmentLatestAvailable()-> dict[str,int | float]:
+    pass
+
+# --------- Det skal finnes spesielle endepunkter for tilgang til aktuator funskjoner ---------------
+
+# get current state for actuator uuid
+@app.get("smarthouse/actuator/{uuid}/current")
+def get_smarthouse_actuatorCurrentState()-> dict[str,int | float]:
+    pass
+
+# oppdater current state for actuator uuid
+@app.put("smarthouse/device/{uuid}")
+def put_smarthouse_actuatorCurrentState()-> dict[str,int | float]:
+    pass
+
+
+
 
 # TODO: implement the remaining HTTP endpoints as requested in
 # https://github.com/selabhvl/ing301-projectpartC-startcode?tab=readme-ov-file#oppgavebeskrivelse
