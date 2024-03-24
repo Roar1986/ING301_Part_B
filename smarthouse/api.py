@@ -52,6 +52,10 @@ def get_smarthouse_info() -> dict[str, int | float]:
 
 
 # --------------- Det skal finnes endepunkter for å inspisere strukturen til huset ---------------
+# Note
+# fid = FloorID
+# rid = RoomID
+# uuid = "Universally Unique Identifier", i vårt tilfelle tenker eg t.d. DeviceID "4d5f1ac6-906a-4fd1-b4bf-3a0671e4c4f1"
 
 # Få informasjon frå alle etasjar
 @app.get("/smarthouse/floor")
@@ -61,17 +65,17 @@ def get_smarthouse_floor() -> dict[str,int | float]:
         
     }
 
-# Få informasjon om ein gitt etasje gitt av "fid"
+# Få informasjon om ein gitt etasje gitt av "fid" = FloorID
 @app.get("/smarthouse/floor/{fid}")
 def get_smarthouse_floor_specific() -> dict[str,int | float]:
     pass
 
-# Få informasjon om alle room på ein gitt etasje
+# Få informasjon om alle room på ein gitt etasje "fid" = FloorID
 @app.get("/smarthouse/floor/{fid}/room")
 def get_smarthouse_AllroomsAtSpecificFloor() -> dict[str,int | float]:
     pass
 
-# Informasjon om ein spesific rom {rid} på ein gitt etasje {fid}
+# Informasjon om ein spesific rom {rid} "RoomID" på ein gitt etasje {fid} "FloorID" 
 @app.get("/smarthouse/floor/{fid}/room/{rid}")
 def get_smarthouse_roomAtSpecificFloor()-> dict[str,int | float]:
     pass
@@ -83,19 +87,19 @@ def get_smarthouse_roomAtSpecificFloor()-> dict[str,int | float]:
 def get_smarthouse_device()-> dict[str,int | float]:
     pass
 
-# Informasjon om ein gitt device identifisert av uuid
+# Informasjon om ein gitt device identifisert av "uuid" = DeviceID
 @app.get("/smarthouse/device/{uiid}")
 def get_smarthouse_device()-> dict[str,int | float]:
     pass
 
 # --------- Det skal finnes spesielle endepunkter for tilgang til sensor funksjoner -----------------
 
-# Get current sensor måling for sensor uuid
+# Get current sensor måling for sensor "uuid" = DeviceID 
 @app.get("smarthouse/sensor/{uuid}/current")
 def get_smarthouse_sensor_currentMeasurment()-> dict[str,int | float]:
     pass
 
-# Legg til måling for sensor uuid
+# Legg til måling for sensor "uuid" = DeviceID 
 @app.post("smarthouse/sensor/{uuid}/current")
 def post_smarthouse_sensor_Measurment()-> dict[str,int | float]:
     pass
