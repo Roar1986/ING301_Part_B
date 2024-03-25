@@ -134,17 +134,26 @@ def get_smarthouse_roomAtSpecificFloor(fid : int, rid : str)-> List[Dict[str, in
             return roomList
         else: 
             raise HTTPException(status_code=404, detail="Dette rommet eksisterer ikkje")
-    
 
-    
-    
     
 # --------- Det skal finnes endepunkter for tilgang til enheter -------------------------------------
 
 # Informasjon om alle devicer
 @app.get("/smarthouse/device")
-def get_smarthouse_device()-> dict[str,int | float]:
-    pass
+def get_smarthouse_device()-> List[Dict[str, int | str | float]]:
+    
+    allDevices = smarthouse.get_devices()
+    deviceList = []
+    for devices in allDevices:
+        deviceData = {
+            "Device id" : devices.id,
+            "Model Name" : devices.model_name,
+            "Supplier" : devices.supplier,
+            "Device In Room" : devices.room.room_name
+        } 
+        deviceList.append(deviceData)
+    
+    return deviceList
 
 # Informasjon om ein gitt device identifisert av "uuid" = DeviceID
 @app.get("/smarthouse/device/{uiid}")
