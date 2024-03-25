@@ -162,7 +162,7 @@ def get_smarthouse_device()-> List[Dict[str, int | str | float]]:
 def get_smarthouse_device_by_id(uiid : str)-> List[dict[str, int | float | str]]:
 
     allDevices = smarthouse.get_devices()
-    deviceList=[]
+    deviceList = []
 
     for devices in allDevices:        
         if str(devices.id) == str(uiid):
@@ -186,8 +186,27 @@ def get_smarthouse_device_by_id(uiid : str)-> List[dict[str, int | float | str]]
 
 # Get current sensor måling for sensor "uuid" = DeviceID 
 @app.get("/smarthouse/sensor/{uuid}/current")
-def get_smarthouse_sensor_currentMeasurment()-> dict[str,int | float]:
-    pass
+def get_smarthouse_sensor_currentMeasurment(uiid:str)-> List[Dict[str, int | float | str]]:
+    
+    device = smarthouse.get_devices() # Henter alle devices
+    deviceList = [] # Lager ei tom liste
+
+    for sensor in device: # Går gjennom alle sensorer i smarhuset
+        if str(sensor.id) == str(uiid): # Sjekker sensor ID opp mot ID som er tastet inn
+            SensorReading = repo.get_latest_reading(sensor) # Laster inn siste avlesninger frå sensor
+            if SensorReading: # Sjekker om avlesningen eksisterer
+                sensorData = { # Skriver data
+                    "Verdi" : SensorReading.value,
+                    "Unit" : SensorReading.unit,
+                    "Tid" : SensorReading.timestamp
+                }
+                deviceList.append(sensorData) # Legger sensorData i ei liste
+
+    # Sjekker om device list eksisterer, ellers blir HTTPExeption sendt
+    if deviceList:
+        return deviceList
+    else:
+        raise HTTPException(status_code=404, detail="Denna sensoren har ikkje noko siste målinger")
 
 # Legg til måling for sensor "uuid" = DeviceID 
 @app.post("/smarthouse/sensor/{uuid}/current")
