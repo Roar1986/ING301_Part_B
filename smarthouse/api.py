@@ -122,16 +122,23 @@ def get_smarthouse_roomAtSpecificFloor(fid : int, rid : str)-> List[Dict[str, in
 
     if HenterData:
         for rooms in getAllRooms:
-            if str(rooms.rooms_name) == str(rid):
+            if str(rooms.room_name) == str(rid) and int(rooms.floor.level) == int(fid):
                 roomData = {
                     "Floor Level" : rooms.floor.level,
                     "room name" : rooms.room_name,
                     "room size" : rooms.room_size
                 }
                 roomList.append(roomData)
-        return roomList
+        # Sjekker om rommet eksisterer, om ikkje vil ein exeption bli returnert
+        if roomList:
+            return roomList
+        else: 
+            raise HTTPException(status_code=404, detail="Dette rommet eksisterer ikkje")
+    
 
-
+    
+    
+    
 # --------- Det skal finnes endepunkter for tilgang til enheter -------------------------------------
 
 # Informasjon om alle devicer
