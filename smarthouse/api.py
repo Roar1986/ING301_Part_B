@@ -152,13 +152,35 @@ def get_smarthouse_device()-> List[Dict[str, int | str | float]]:
             "Device In Room" : devices.room.room_name
         } 
         deviceList.append(deviceData)
-    
+
+
+    #Ingen failsafe trengst      
     return deviceList
 
 # Informasjon om ein gitt device identifisert av "uuid" = DeviceID
 @app.get("/smarthouse/device/{uiid}")
-def get_smarthouse_device()-> dict[str,int | float]:
-    pass
+def get_smarthouse_device_by_id(uiid : str)-> List[dict[str, int | float | str]]:
+
+    allDevices = smarthouse.get_devices()
+    deviceList=[]
+
+    for devices in allDevices:        
+        if str(devices.id) == str(uiid):
+            deviceData = {
+                "Device id" : devices.id,
+                "Model Name" : devices.model_name,
+                "Supplier" : devices.supplier,
+                "Device In Room" : devices.room.room_name                           
+            }
+            deviceList.append(deviceData)
+
+    if deviceList:
+        return deviceList
+    else:
+        raise HTTPException(status_code=404, detail="Denna id'n matcher ikkje")
+
+   
+
 
 # --------- Det skal finnes spesielle endepunkter for tilgang til sensor funksjoner -----------------
 
