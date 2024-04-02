@@ -266,9 +266,21 @@ def get_smarthouse_sensor_MeasurmentLatestAvailable(uiid:str, n:int)-> List[Dict
 
 # Slett gamleste måling for sensor uuid
 @app.delete("/smarthouse/sensor/{uuid}/oldest")
-def delete_smarthouse_sensor_MeasurmentLatestAvailable(uiid : str)-> dict[str,int | float]:
+def delete_smarthouse_sensor_MeasurmentLatestAvailable(uuid : str)-> str:
     
-    pass
+    # Check if sensor exsist
+    device = smarthouse.get_device_by_id(uuid) # Sjekker om device eksisterer
+    if device is None:
+       raise HTTPException(status_code=404, detail="Sensor not found")
+
+    try:
+        if device: # Om det er ein device, så køyrer ein fjerning av eldste avlesning
+           sucess = repo.removing_oldest_reading_from_database(device)
+    finally:
+        if sucess:
+            return "Oldest reading have been sucesfylly removed"
+        else: 
+            return "Oldest reading was not removed"
 
 # --------- Det skal finnes spesielle endepunkter for tilgang til aktuator funskjoner ---------------
 

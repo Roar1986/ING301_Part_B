@@ -148,6 +148,43 @@ class SmartHouseRepository:
             return Measurement(value=latest_reading_data[0], timestamp=latest_reading_data[1], unit=latest_reading_data[2])
         else:
             return None
+        
+
+
+        # Method for returning the oldest measurment from a sensor
+    def removing_oldest_reading_from_database(self, sensor) -> Optional[Measurement]:
+
+        """
+        Retrieves the most recent sensor reading for the given device if available.
+        Returns None if the given device has no sensor readings.
+        """
+        
+        # Lager ei spørring der eg finner den eldste verdien i tabellen, for den gitte sensoren
+        cursor = self.cursor()
+        query = """
+        DELETE FROM measurements
+        WHERE ts = (
+            SELECT MIN(ts)
+            FROM measurements
+            WHERE device = ?
+        )
+        AND device = ?;
+        """
+
+        # dette er ei try block, om det skulle vere ein feil i denne spørringa tl.d. 
+        # så vil koden hoppe videre til finnaly og lukke close cursor
+        try:
+            cursor.execute(query, (sensor.id, sensor.id))
+            self.conn.commit()
+            if cursor.rowcount > 0: # Sjekker om noen av radene har blitt fjernet
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+        finally:
+            cursor.close()
     
     # Method for returning n: number of readings from a sensor
     def get_all_readings(self, sensor, limit) -> Optional[Measurement]:
