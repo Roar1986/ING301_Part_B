@@ -112,6 +112,7 @@ class SmartHouseRepository:
 
         return DEMO_HOUSE2
 
+    # Method for returning the latest measurment from a sensor
     def get_latest_reading(self, sensor) -> Optional[Measurement]:
 
         """
@@ -146,6 +147,46 @@ class SmartHouseRepository:
             return Measurement(value=latest_reading_data[0], timestamp=latest_reading_data[1], unit=latest_reading_data[2])
         else:
             return None
+    
+    # Method for returning n: number of readings from a sensor
+    def get_all_readings(self, sensor, limit) -> Optional[Measurement]:
+
+        """
+        Retrieves the most recent sensor reading for the given device if available.
+        Returns None if the given device has no sensor readings.
+        """
+        
+        # Lager spørring der eg velger value, ts og unit fra tabell measurments
+        # where device = ?, der ? er ein plass holder for sensor.id som kjem seinare i koden
+        # order by ts, desc, 
+        # Limitert til 1 verdi
+        cursor = self.cursor()
+        query = """
+            SELECT value, ts, unit
+            FROM measurements
+            WHERE device = ?
+            ORDER BY ts DESC
+            LIMIT ?;
+        """
+
+        #Lager ei tom liste
+        readings = []
+        # dette er ei try block, om det skulle vere ein feil i denne spørringa tl.d. 
+        # så vil koden hoppe videre til finnaly og lukke close cursor
+        try:
+            cursor.execute(query, (sensor.id,limit))
+            readingmeasurments = cursor.fetchall()
+            for data in readingmeasurments:
+                signelRow = Measurement(value=data[0], timestamp=data[1], unit=data[2])
+                readings.append(signelRow)
+        finally:
+            cursor.close()
+
+        if readings:
+            return readings
+    
+        # Sjekker om det er noko data, om det er data. returnerer vi objetet Measurment og setter rett data på rett plass
+        # Dersom ingen data, None vil bli returnert. 
 
     def update_actuator_state(self, actuator):
         """

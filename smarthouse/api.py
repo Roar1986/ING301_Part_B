@@ -58,6 +58,10 @@ def get_smarthouse_info() -> dict[str, int | float]:
 # fid = FloorID
 # rid = RoomID
 # uuid = "Universally Unique Identifier", i vårt tilfelle tenker eg t.d. DeviceID "4d5f1ac6-906a-4fd1-b4bf-3a0671e4c4f1"
+# POST(HTTP) -> INSERT (SQL)
+# DELETE(HTTP) -> DELETE (SQL)
+# PUT(HTTP) -> UPDATE (SQL)
+# GET(HTTP) -> SELECT (SQL)
 
 # Få informasjon frå alle etasjar
 @app.get("/smarthouse/floor")
@@ -214,13 +218,35 @@ def post_smarthouse_sensor_Measurment()-> dict[str,int | float]:
     pass
 
 #  get n siste målinger for sensor uuid. om query parameter ikkje er tilgjengelig, den alle tilgjengelege målinger.
-@app.get("/smarthouse/sensor/{uuid}/values?limit=n")
-def get_smarthouse_sensor_MeasurmentLatestAvailable()-> dict[str,int | float]:
-    pass
+@app.get("/smarthouse/sensor/{uuid}/values_limit_n")
+def get_smarthouse_sensor_MeasurmentLatestAvailable(uiid:str, n:int)-> List[Dict[str, int | float | str | object]]:
+    
+    device = smarthouse.get_devices() # Henter alle devices
+    deviceList = [] # Lager ei tom liste
+    
+    for sensor in device: # Går gjennom alle sensorer i smarhuset
+        if str(sensor.id) == str(uiid): # Sjekker sensor ID opp mot ID som er tastet inn
+            SensorReading = repo.get_all_readings(sensor,n) #Laster inn n antall avlesninger frå sensor
+            if SensorReading: # Om det er noko avlesning
+                for readings in SensorReading: # Går gjennom alle avlesningane
+                    sensorData = { # Skriver data frå avlesningane
+                    "SensorNavn" : sensor.model_name,
+                    "Verdi" : readings.value,
+                    "Unit" :  readings.unit,
+                    "Tid" :   readings.timestamp
+                    }
+                    deviceList.append(sensorData) # Legger sensorData i ei liste
+
+    # Sjekker om device list eksisterer, ellers blir HTTPExeption sendt
+    if deviceList:
+        return deviceList
+    else:
+        raise HTTPException(status_code=404, detail="Denna sensoren har ikkje noko målingar")
 
 # Slett gamleste måling for sensor uuid
 @app.delete("/smarthouse/sensor/{uuid}/oldest")
-def delete_smarthouse_sensor_MeasurmentLatestAvailable()-> dict[str,int | float]:
+def delete_smarthouse_sensor_MeasurmentLatestAvailable(uiid : str)-> dict[str,int | float]:
+    
     pass
 
 # --------- Det skal finnes spesielle endepunkter for tilgang til aktuator funskjoner ---------------
