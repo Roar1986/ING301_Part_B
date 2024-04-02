@@ -1,10 +1,11 @@
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from smarthouse.persistence import SmartHouseRepository
 from pathlib import Path
 from typing import List,Dict,Union
+from datetime import datetime
 import os
 
 def setup_database():
@@ -214,12 +215,32 @@ def get_smarthouse_sensor_currentMeasurment(uiid:str)-> List[Dict[str, int | flo
 
 # Legg til måling for sensor "uuid" = DeviceID 
 @app.post("/smarthouse/sensor/{uuid}/current")
-def post_smarthouse_sensor_Measurment()-> dict[str,int | float]:
-    pass
+def post_smarthouse_sensor_Measurment(uuid : str, measurment_time : str , value : float, unit : str)-> str:
+    
+    # Check if sensor exsist
+    device = smarthouse.get_device_by_id(uuid) # Henter alle devices
+    if device is None:
+       raise HTTPException(status_code=404, detail="Sensor not found")
+    
+    # Checking time format
+    try:
+        date_object = datetime.strptime(measurment_time, "%Y-%m-%d %H:%M:%S")
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail="Invalid date format")
+    
+    # Code for adding the measurment to the database, by calling a method from persistence
+    try:
+        #measurement = repo.add_measurment(uuid,'2024-04-02 21:00:02',20.2,"Kwh")
+        measurement = repo.add_measurment(uuid, date_object, value, unit)
+    finally:
+        if measurement:
+            return "Values are succsesfully added to database"
+        else:
+            return "Measurments are not added to the database"
 
 #  get n siste målinger for sensor uuid. om query parameter ikkje er tilgjengelig, den alle tilgjengelege målinger.
 @app.get("/smarthouse/sensor/{uuid}/values_limit_n")
-def get_smarthouse_sensor_MeasurmentLatestAvailable(uiid:str, n:int)-> List[Dict[str, int | float | str | object]]:
+def get_smarthouse_sensor_MeasurmentLatestAvailable(uiid:str, n:int)-> List[Dict[str , int | float | str | object]]:
     
     device = smarthouse.get_devices() # Henter alle devices
     deviceList = [] # Lager ei tom liste

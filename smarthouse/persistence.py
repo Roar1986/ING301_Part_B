@@ -2,6 +2,7 @@ import sqlite3
 from typing import Optional
 from smarthouse.domain import Measurement, SmartHouse,Room,Floor, Sensor, ActuatorWithSensor, Actuator
 from pathlib import Path
+from datetime import datetime
 
 
 class SmartHouseRepository:
@@ -188,6 +189,30 @@ class SmartHouseRepository:
         # Sjekker om det er noko data, om det er data. returnerer vi objetet Measurment og setter rett data på rett plass
         # Dersom ingen data, None vil bli returnert. 
 
+    # Method for adding measurments to database, returning a bool true or false if implimentation was ok
+    def add_measurment(self, sensor_ID : str , timestamp : datetime , value : float , unit : str ) -> bool: #Optional[Measurement]:
+
+        # Oppretter forbindelse med database
+        cursor = self.cursor()
+        query = """
+            INSERT INTO measurements(device, value, ts, unit)
+            VALUES(?,?,?,?);
+        """
+
+        try:
+            # Legger til måling i database
+            cursor.execute(query,(sensor_ID, value, timestamp,unit))
+            # Committer endringa til databasen
+            self.conn.commit()
+            return True
+
+        except Exception as e:
+        # Handle any exceptions
+            print(f"An error occurred: {e}")
+            return False
+        finally:
+            cursor.close()      
+    
     def update_actuator_state(self, actuator):
         """
         Saves the state of the given actuator in the database. 
