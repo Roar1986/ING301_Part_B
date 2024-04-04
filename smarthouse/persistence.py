@@ -88,7 +88,7 @@ class SmartHouseRepository:
         query2 = "select * FROM rooms r inner join devices d on r.id = d.room;"
         cursor.execute(query2)
         DeviceExtract2 = cursor.fetchall()
-        cursor.close()
+        #cursor.close()
 
         # Kode for å registrere device i rett rom
         for devices in DeviceExtract2:
@@ -110,6 +110,21 @@ class SmartHouseRepository:
                     if devices[1] == 2: # sjekker etasje
                         if str(devices[3]) == str(room.room_name): # Sjekker rom navn er like, gitt at dei er unike
                             DEMO_HOUSE2.register_device(room,device) # Registrerer devicen i rette rommet
+
+        
+        for dev in DEMO_HOUSE2.get_devices():
+            if isinstance(dev, Actuator):
+                cursor.execute(f"SELECT state FROM states where device = '{dev.id}';")
+                state = cursor.fetchone()[0]
+                if state is None:
+                    dev.turn_off()
+                elif float(state) == 1.0:
+                    dev.turn_on()
+                else:
+                    dev.turn_on(float(state))
+
+
+        cursor.close()
 
         return DEMO_HOUSE2
 
@@ -250,44 +265,26 @@ class SmartHouseRepository:
         finally:
             cursor.close()      
     
+    # Metode tatt frå løysningsforslag
     def update_actuator_state(self, actuator):
         """
         Saves the state of the given actuator in the database. 
         """
-        cursor = self.conn.cursor()
-        
-        try:
-            # Sjekker om det er ein 
-            cursor.execute("SELECT state FROM actuator_states WHERE device_id = ?", (actuator.id,))
-            result = cursor.fetchone()
-
-
-            # Sjekker result, om det ikkje er None
-            if result is not None:
-                # Det finnes ein entry
-                # Definerer staten basert på actuatorens aktuelle state
-                new_state = str(actuator.state) 
-                if isinstance(actuator.state, bool): 
-                    cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
-                else:
-                    new_state = "True"
-                    cursor.execute("UPDATE actuator_states SET state = ? WHERE device_id = ?", (new_state, actuator.id))
-            else:
-                # Ingen entry, ny rad blir lagt til
-                # Staten skal lagres i ein string som representerer den aktuelle verdien
-                initial_state = str(actuator.state) if isinstance(actuator.state, bool) else str(float(actuator.state))
-                cursor.execute("INSERT INTO actuator_states (device_id, state) VALUES (?, ?)", (actuator.id, initial_state))
-
-            # Commintter endringane
+        if isinstance(actuator, Actuator):
+            s = 'NULL'
+            if isinstance(actuator.state, float):
+                s = str(actuator.state)
+            elif actuator.state is True:
+                s = '1.0'
+            query = f"""
+                    UPDATE states 
+                    SET state = {s}
+                    WHERE device = '{actuator.id}';
+                            """
+            c = self.cursor()
+            c.execute(query)
             self.conn.commit()
-
-        except sqlite3.Error as e:
-            print(f"An error occurred: {e}")
-            self.conn.rollback()
-        finally:
-            cursor.close()
-
-            # Kan sjå at statane ikkje lagres skikkelig, ser ut som dei er rett i databasen. Men ikkje i objektet.
+            c.close()
 
 
         # TODO: Implement this method. You will probably need to extend the existing database structure: e.g.

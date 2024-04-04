@@ -6,6 +6,7 @@ from smarthouse.persistence import SmartHouseRepository
 from pathlib import Path
 from typing import List,Dict,Union
 from datetime import datetime
+from smarthouse.domain import Actuator
 import os
 
 def setup_database():
@@ -286,13 +287,44 @@ def delete_smarthouse_sensor_MeasurmentLatestAvailable(uuid : str)-> str:
 
 # get current state for actuator uuid
 @app.get("/smarthouse/actuator/{uuid}/current")
-def get_smarthouse_actuatorCurrentState()-> dict[str,int | float]:
-    pass
+def get_smarthouse_actuatorCurrentState(uuid:str)-> dict[str, str | float]:
+    
+    # Initial verdier
+    actuator_found = False
+    state_value = None
+
+    for dev in smarthouse.get_devices(): # henter alle devices
+        if isinstance(dev, Actuator) and dev.id == uuid:
+            actuator_found = True # Actuator er funnet
+            try:
+                # Passer på at state er ein flaot, vist den ikkje er None eller allerede ein float
+                state_value = dev.state if isinstance(dev.state, float) else float(dev.state)
+            except ValueError:
+                raise HTTPException(status_code=500, detail="Invalid state value for actuator")
+            break  # Aktuator funnet, treng ikje og fortsette
+
+    if not actuator_found:
+        raise HTTPException(status_code=404, detail="Actuator not found")
+
+    return {"uuid": uuid, "state": state_value} # Returnerer uuid og verdien av staten
 
 # oppdater current state for actuator uuid
 @app.put("/smarthouse/device/{uuid}")
-def put_smarthouse_actuatorCurrentState()-> dict[str,int | float]:
-    pass
+def put_smarthouse_actuatorCurrentState(uuid : str, state_update: Union[int, float])-> dict[str, Union[str, int, float]]:
+    
+    for dev in smarthouse.get_devices():  # Går gjennom alle devicer i smarthuset
+        if isinstance(dev, Actuator) and dev.id == uuid:
+            # Om ein finn actuator, så går ein videre.
+            try:
+                dev.state = state_update  # Oppdaterer state
+                repo.update_actuator_state(dev)  # køyrer metode fra persistence for å oppdatere status
+                return {"uuid": uuid, "state": dev.state}  # returnerer oppdatert status
+            except Exception as e:
+                # If an error occurs, return an HTTPException with error details
+                raise HTTPException(status_code=500, detail=str(e))
+    
+    # Actuator not found, raise a 404 error
+    raise HTTPException(status_code=404, detail="Actuator not found")
 
 
 
